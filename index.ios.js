@@ -1,0 +1,42 @@
+var React = require('react-native');
+var NavBar = require('./app/components/nav_bar');
+var Feed = require('./app/views/feed');
+var LogEvent = require('./app/views/log_event');
+
+var {
+    AppRegistry,
+    StyleSheet,
+    Text,
+    View,
+    Navigator,
+} = React;
+
+var styles = StyleSheet.create({
+});
+
+class BioStream extends React.Component{
+    feedView() {
+        return {component: Feed, navigationBar: NavBar, index: 0 } 
+    }
+
+    logEventView() {
+        return {component: LogEvent, navigationBar: NavBar, index: 1 } 
+    }
+
+    renderScene(route, navigator) {
+        return(
+            <View>
+                <route.navigationBar navigator={navigator}/>
+                <route.component />
+            </View>
+        )
+    }
+
+    render() {
+        return (
+            <Navigator initialRouteStack={[this.logEventView(), this.feedView()]} renderScene={ this.renderScene } />
+        );
+    }
+};
+
+AppRegistry.registerComponent('BioStream', () => BioStream);
