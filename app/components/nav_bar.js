@@ -1,4 +1,6 @@
 var React = require('react-native');
+var Api = require('../utils/api');
+var PubSub = require('../utils/pub_sub');
 
 var {
     AppRegistry,
@@ -22,6 +24,8 @@ var styles = StyleSheet.create({
 
     toolbarButton:{
         width: 130,
+        fontSize: 16,
+        padding: 5,
         color:'#fff',
         textAlign:'center'
     },
@@ -30,28 +34,27 @@ var styles = StyleSheet.create({
         color:'#fff',
         textAlign:'center',
         fontWeight:'bold',
-        flex:1
+        flex:1,
+        fontSize: 18,
+        padding: 5
     },
 });
 
 class NavBar extends React.Component{
-    componentDidMount() {
-        console.log("navbar props", this.props.navigator)
-    }
-
     navigateTo(opts) {
         var routeId = opts.view == 'Feed' ? 1 : 0
+        if (routeId == 1) { PubSub.publish('refreshIndex');}
         this.props.navigator.jumpTo(this.props.navigator.getCurrentRoutes()[routeId])
     }
 
     render() {
         return (
             <View style={styles.toolbar}>
-                <TouchableHighlight onPress={ this.navigateTo.bind(this, {view: 'Feed'})} underlayColor='yellow'>
+                <TouchableHighlight onPress={ this.navigateTo.bind(this, {view: 'Feed'})} underlayColor='white'>
                     <Text style={styles.toolbarButton}>Feed</Text>
                 </TouchableHighlight>
                 <Text style={styles.toolbarTitle}>BioStream</Text>
-                <TouchableHighlight onPress={ this.navigateTo.bind(this, {view: 'LogEvent'})} underlayColor='yellow'>
+                <TouchableHighlight onPress={ this.navigateTo.bind(this, {view: 'LogEvent'})} underlayColor='white'>
                     <Text style={styles.toolbarButton}>Log Event</Text>
                 </TouchableHighlight>
             </View>

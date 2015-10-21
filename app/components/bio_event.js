@@ -1,5 +1,6 @@
 var React = require('react-native');
 var moment = require('moment');
+var PubSub = require('../utils/pub_sub');
 
 var {
     View,

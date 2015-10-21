@@ -1,6 +1,7 @@
 var React = require('react-native');
 var Api = require('../utils/api');
-var BioEvent = require('../components/bio_event');
+var PubSub = require('../utils/pub_sub');
+var moment = require('moment');
 
 var {
     View,
@@ -9,7 +10,8 @@ var {
     TouchableHighlight,
     Image,
     ScrollView,
-    ActivityIndicatorIOS
+    ActivityIndicatorIOS,
+    ListView
 } = React;
 
 var styles = StyleSheet.create({
@@ -17,9 +19,11 @@ var styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'white',
     },
-    borders: {
-        borderColor: 'grey',
-        borderWidth: 3,
+    listContainer: {
+        height: 600
+    },
+    info: {
+        fontSize: 22
     },
     centering: {
         alignItems: 'center',
@@ -29,53 +33,88 @@ var styles = StyleSheet.create({
         marginTop: 100,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    feedImage: {
+        height: 345,
+        width: 345,
+        alignSelf: 'center'
+    },
+    time: {
+        fontSize: 28,
+        color: '#1F7073'
+    },
+    info: {
+        fontSize:16,
+        marginLeft: 5,
+        color: 'grey'
+    },
+    eventContainer: {
+        flex: 1,
+        borderColor: 'grey',
+        borderStyle: 'solid',
+        borderBottomWidth: 3,
+        margin: 20,
+        flexDirection: 'column',
+        backgroundColor: 'white'
     }
 });
 
 class Feed extends React.Component{
+    componentDidMount() {
+        this.setState({isLoading: true});
+        PubSub.subscribe('refreshIndex', this.loadBioEvents.bind(this));
+        this.loadBioEvents();
+    }
+
+    loadBioEvents() {
+        Api.get('/events').then( 
+                (res) => {
+                    this.setState({isLoading: false, eventsList: this.state.eventsList.cloneWithRows(res.events)});
+                }
+        )
+    }
+
+    renderBioEvent(eventObj, sectionID, rowID) {
+        return  <View style={styles.eventContainer}>
+                    <Image style={styles.feedImage} resizeMode='stretch' source={{ uri: 'http://www.startuplandia.io/images/i-004.jpg'}} />
+                    <Text style={styles.time} > { moment(eventObj.createdAt).format('MMM Do H:mm')} </Text>
+                    <Text style={styles.info} > {eventObj.info}</Text> 
+                </View>
+    }
+
     constructor(props) {
         super(props);
+        var eventsList = new ListView.DataSource({rowHasChanged: (oldRow, newRow) => { return newRow }
+        });
         this.state = {
-            events: [],
+            eventsList: eventsList.cloneWithRows([]),
             isLoading: false
         }
-    }
-
-    componentDidMount() {
-        this.setState({isLoading: true})
-        Api.get('/events').then((res) => 
-                    this.setState({events: this.formatEvents(res.events), isLoading: false})
-                )
-    }
-
-    formatEvents(eventObjs) {
-        return eventObjs.map( (eventObj, index) => {
-                return <BioEvent key={index} info={eventObj.info} createdAt={eventObj.createdAt} /> 
-            }
-        )
     }
 
     render() {
         if ( this.state.isLoading == false) {
             return(
-                    <View style={styles.mainContainer}>
-                        <ScrollView>
-                            {this.state.events}
-                        </ScrollView>
-                    </View>
+                <View>
+                    <ListView 
+                        style={styles.listContainer}
+                        dataSource={this.state.eventsList} 
+                        renderRow={this.renderBioEvent} />
+                </View>
                 )
         } else {
             return (
-                <View style={styles.indicator}>
-                    <ActivityIndicatorIOS
-                        animating={this.state.isLoading}
-                        color="#1F7073"
-                        size="large"></ActivityIndicatorIOS>
+                <View style={styles.mainContainer}>
+                    <View style={styles.indicator}>
+                        <ActivityIndicatorIOS
+                            animating={this.state.isLoading}
+                            color="#1F7073"
+                            size="large"></ActivityIndicatorIOS>
+                    </View>
                 </View>
             )
         }
     }
 };
-
 
 module.exports = Feed;
