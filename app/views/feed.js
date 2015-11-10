@@ -11,6 +11,7 @@ var {
     Image,
     ScrollView,
     ActivityIndicatorIOS,
+    NativeModules,
     ListView
 } = React;
 
@@ -76,7 +77,7 @@ class Feed extends React.Component{
 
     renderBioEvent(eventObj, sectionID, rowID) {
         return  <View style={styles.eventContainer}>
-                    <Image style={styles.feedImage} resizeMode='stretch' source={{ uri: 'http://www.startuplandia.io/images/i-004.jpg'}} />
+                    <Image style={styles.feedImage} resizeMode='stretch' source={{ uri: eventObj.photos[0] }} />
                     <Text style={styles.time} > { moment(eventObj.createdAt).format('MMM Do H:mm')} </Text>
                     <Text style={styles.info} > {eventObj.info}</Text> 
                 </View>

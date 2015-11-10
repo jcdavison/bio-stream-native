@@ -11,7 +11,8 @@ var {
     ScrollView,
     ActivityIndicatorIOS,
     TextInput,
-    TouchableHighlight
+    CameraRoll,
+    NativeModules
 } = React;
 
 var styles = StyleSheet.create({
@@ -59,7 +60,35 @@ var styles = StyleSheet.create({
     buttonTouch: {
         margin: 10,
         borderRadius: 5
+    },
+
+    imageSelectList: {
+        flexDirection: 'row',
+        // alignItems: 'center',
+        // justifyContent: 'center',
+    },
+
+    imageSection: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    selectImageList: {
+        height: 60,
+        width: 60,
+        padding: 10,
+        margin: 3
+    },
+
+    eventImage: {
+        height: 250,
+        width: 250,
+        padding: 10,
+        margin: 3,
+        borderWidth: 2,
+        borderColor: 'grey'
     }
+
 });
 
 class LogEvent extends React.Component{
@@ -67,21 +96,56 @@ class LogEvent extends React.Component{
         super(props);
         this.state = {
             info: null,
-            isLoading: false
+            isLoading: false,
+            images: [],
+            eventImage: '',
+            imageData: null,
+            s3Data: null
         }
     }
+
+    storeImages(data) {
+        var assets = data.edges;
+        var images = assets.map( asset => asset.node.image );
+        NativeModules.ReadImageData.readImage(images[0].uri, (data) => { this.setState({ imageData: data  }) } )
+        this.setState({images: images, eventImage: images[0].uri});
+    }
+
+    logImageError(error) {
+        console.log(error);
+    }
+
+    componentDidMount() {
+        CameraRoll.getPhotos({first: 6}, this.storeImages.bind(this), this.logImageError);
+    }
+
+    selectImage(opts) {
+        this.setState({eventImage: opts.selectUri});
+        NativeModules.ReadImageData.readImage(opts.selectUri, (data) => { this.setState({ imageData: data }) } );
+    }
+
+    renderImages() {
+        return this.state.images.map( (image, index) => { 
+            return (
+                <TouchableHighlight key={`select-image-touch-${index}`} onPress={ this.selectImage.bind(this, {selectUri: image.uri}) } underlayColor='#1F7073'>
+                    <Image style={styles.selectImageList} key={`select-image-${index}`} source={{uri: image.uri}} />
+                </TouchableHighlight>
+            )  
+        })
+    }
+
 
     submitEvent() {
         if (this.state.info == null) {
             return null
         } else {
             this.setState({isLoading: true});
-            Api.post('/events', {info: this.state.info})
+            var encodedData = encodeURIComponent(this.state.imageData);
+            Api.post('/events', {info: this.state.info, imageData: encodedData })
                 .then( (res) => {
-                        this.setState({info: null, isLoading: false});
-                        PubSub.publish('refreshIndex');
-                    }
-                )
+                    this.setState({info: null, isLoading: false});
+                    PubSub.publish('refreshIndex');
+                });
         }
     }
 
@@ -89,13 +153,18 @@ class LogEvent extends React.Component{
         if ( this.state.isLoading == false) {
             return (
                 <View>
+                    <View style={styles.imageSection} >
+                        <Image style={styles.eventImage} source={{ uri: this.state.eventImage }} />
+                        <View style={styles.imageSelectList}>
+                          { this.renderImages() }
+                        </View>
+                    </View>
                     <TextInput
                         keyboardType='default'
                         style={styles.eventInfo}
                         onChangeText={(text) => this.setState({info: text})}
                         value={this.state.info} 
                     />
-
                     <TouchableHighlight style={styles.buttonTouch} onPress={ this.submitEvent.bind(this)} underlayColor='#1F7073'>
                         <View style={styles.centering} >
                             <Text style={styles.createButton} >Create</Text>
